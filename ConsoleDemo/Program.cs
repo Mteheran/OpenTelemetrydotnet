@@ -1,14 +1,21 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Logs;
+using System.Diagnostics.Metrics;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
 
-using var loggerFactory = LoggerFactory.Create(builder =>
-{
-    builder.AddOpenTelemetry(options =>
-            {
-                options.AddConsoleExporter();
-            });
-});
+Meter MyMeter = new("ConsoleDemo.Metrics", "1.0");
 
-var logger = loggerFactory.CreateLogger<Program>();
-logger.LogInformation("Hello community");
+Counter<long> RequestCounter = MyMeter.CreateCounter<long>("RequestCounter");
+
+using var meterProvider = Sdk.CreateMeterProviderBuilder()
+            .AddMeter("ConsoleDemo.Metrics")
+            .AddConsoleExporter()
+            .Build();
+
+RequestCounter.Add(1, new KeyValuePair<string, object?>("POST Request", HttpMethod.Post));
+RequestCounter.Add(1, new KeyValuePair<string, object?>("GET Request", HttpMethod.Get));
+RequestCounter.Add(1, new KeyValuePair<string, object?>("GET Request", HttpMethod.Get));
+RequestCounter.Add(1, new KeyValuePair<string, object?>("POST Request", HttpMethod.Post));
+RequestCounter.Add(1, new KeyValuePair<string, object?>("PUT Request", HttpMethod.Put));
+
