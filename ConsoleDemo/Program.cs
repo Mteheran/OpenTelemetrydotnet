@@ -1,21 +1,31 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using Microsoft.Extensions.Logging;
-using System.Diagnostics.Metrics;
 using OpenTelemetry;
-using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
 
-Meter MyMeter = new("ConsoleDemo.Metrics", "1.0");
+ActivitySource MyActivitySource = new(
+        "ConsoleDemo.Trace");
 
-Counter<long> RequestCounter = MyMeter.CreateCounter<long>("RequestCounter");
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("ConsoleDemo.Trace")
+    .AddConsoleExporter()
+    .Build();
 
-using var meterProvider = Sdk.CreateMeterProviderBuilder()
-            .AddMeter("ConsoleDemo.Metrics")
-            .AddConsoleExporter()
-            .Build();
+using (var activity = MyActivitySource.StartActivity("ActivityStarted"))
+{
+    int StartNumber = 10000;
+    activity?.SetTag("StartNumber", StartNumber);
+    
 
-RequestCounter.Add(1, new KeyValuePair<string, object?>("POST Request", HttpMethod.Post));
-RequestCounter.Add(1, new KeyValuePair<string, object?>("GET Request", HttpMethod.Get));
-RequestCounter.Add(1, new KeyValuePair<string, object?>("GET Request", HttpMethod.Get));
-RequestCounter.Add(1, new KeyValuePair<string, object?>("POST Request", HttpMethod.Post));
-RequestCounter.Add(1, new KeyValuePair<string, object?>("PUT Request", HttpMethod.Put));
+    for (int i = 0; i < StartNumber; i++)
+    {
+        DoProcess(i);
+    }
 
+    activity?.SetStatus(ActivityStatusCode.Ok);
+}
+
+void DoProcess(int currentNumer)
+{
+    var doubleValue = currentNumer * 2;
+}
